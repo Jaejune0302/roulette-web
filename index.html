@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>편지 이벤트</title>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<style>
+/* ===== 전체 페이지 중앙 정렬 & 스크롤 방지 ===== */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* 스크롤 방지 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8f8f8;
+  font-family: sans-serif;
+}
+
+/* ===== 편지 ===== */
+.letter {
+  width: 90vw;
+  max-width: 300px;
+  aspect-ratio: 3/2;
+  background: #fff;
+  position: relative;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0; /* 모바일에서 줄어드는 걸 방지 */
+}
+
+/* ===== 덮개 ===== */
+.flap {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #ffe4e1;
+  clip-path: polygon(0 0, 100% 0, 50% 50%);
+  transform-origin: top;
+  transition: transform 0.8s ease;
+}
+
+/* 열릴 때 */
+.letter.open .flap {
+  transform: rotateX(180deg);
+}
+
+/* ===== 내용 ===== */
+.content {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column; /* 버튼 추가를 위해 열 방향 */
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: 0.5s;
+  pointer-events: none; /* 클릭 방지 */
+  font-size: 1.2rem;
+  gap: 10px; /* 버튼과 텍스트 사이 간격 */
+}
+
+.letter.open .content {
+  opacity: 1;
+  pointer-events: auto; /* 열리면 클릭 가능 */
+}
+
+/* ===== 하트 버튼 ===== */
+.heart {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+  cursor: pointer;
+  z-index: 10;
+  transition: 0.3s;
+}
+
+.heart:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+/* ===== 선물 뽑으러 가기 버튼 ===== */
+.open-button {
+  padding: 8px 15px;
+  font-size: 14px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.open-button:hover {
+  background: #ff4c4c;
+}
+</style>
+</head>
+
+<body>
+
+<div class="letter" id="letter">
+  <div class="flap"></div>
+
+  <div class="content">
+    💌 축하합니다!
+    <button class="open-button" onclick="goToRoulette()">선물 뽑으러 가기</button>
+  </div>
+
+  <div class="heart" onclick="openLetter()">❤️</div>
+</div>
+
+<script>
+function openLetter() {
+  Swal.fire({
+    title: '열어볼까요?',
+    text: '편지를 열면 이벤트가 시작됩니다!',
+    icon: 'question',
+    confirmButtonText: '열기',
+    scrollbarPadding: false, // SweetAlert로 인한 레이아웃 흔들림 방지
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const letter = document.getElementById("letter");
+
+      // 편지 열기
+      letter.classList.add("open");
+
+      // 하트 제거
+      document.querySelector(".heart").style.display = "none";
+
+      // 🎉 팡파레 효과
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    }
+  });
+}
+
+// 선물 뽑으러 가기 버튼 클릭 시 페이지 이동
+function goToRoulette() {
+  window.location.href = "https://jaejune0302.github.io/roulette-web/";
+}
+</script>
+
+</body>
+</html>

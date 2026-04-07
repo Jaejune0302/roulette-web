@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>룰렛</title>
+<style>
+body {
+  text-align: center;
+  font-family: sans-serif;
+  margin-top: 50px;
+  position: relative;
+}
+
+/* ✅ 반응형 적용 */
+.roulette-container {
+  position: relative;
+  width: clamp(220px, 60vw, 320px);
+  height: clamp(220px, 60vw, 320px);
+  margin: auto;
+}
+
+.roulette {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 6px solid #333;
+  position: relative;
+  overflow: hidden;
+  transform: rotate(0deg);
+}
+
+.slice {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  transform-origin: 100% 100%;
+}
+
+.slice span {
+  position: absolute;
+  right: 10px;
+  top: 30px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.pointer {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 25px solid red;
+}
+
+button {
+  margin: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+/* ✅ 핵심 수정 */
+.prizes {
+  position: absolute;
+  top: 50%;
+  right: 5%;
+  transform: translateY(-50%);
+  text-align: left;
+  font-family: sans-serif;
+  background: #f5f5f5;
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+  min-width: 100px;
+}
+
+.prizes h3 {
+  margin-top: 0;
+}
+
+.prizes ol {
+  padding-left: 20px;
+  margin: 5px 0;
+}
+
+/* ✅ 반응형 */
+.result-bar {
+  margin-top: 20px;
+  width: 95%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 10px;
+}
+
+.result-item {
+  padding: 10px;
+  background: #4caf50;
+  color: white;
+  font-weight: bold;
+  border-radius: 8px;
+  text-align: center;
+  animation: pop 0.3s ease;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* ✅ 모바일 대응 */
+@media (max-width: 600px) {
+
+  .prizes {
+    position: static;
+    transform: none;
+    margin: 20px auto;
+    display: inline-block;
+  }
+
+  body {
+    margin-top: 20px;
+  }
+
+}
+</style>
+</head>
+<body>
+
+<h2>룰렛</h2>
+
+<div class="roulette-container">
+  <div class="pointer"></div>
+  <div class="roulette" id="roulette"></div>
+</div>
+
+<div class="prizes">
+  <h3>당첨 항목</h3>
+  <ol>
+    <li>1번</li><li>2번</li><li>3번</li><li>4번</li><li>5번</li>
+    <li>6번</li><li>7번</li><li>8번</li><li>9번</li><li>10번</li>
+  </ol>
+</div>
+
+<br><br>
+<button onclick="startSpin()">돌리기</button>
+<button onclick="stopSpin()">멈추기</button>
+<button onclick="resetResults()">초기화</button>
+
+<div class="result-bar" id="resultBar"></div>
+
+<script>
+const roulette = document.getElementById("roulette");
+const resultBar = document.getElementById("resultBar");
+
+const total = 10;
+const angle = 360 / total;
+
+let rotation = 0;
+let speed = 0;
+let spinning = false;
+let stopping = false;
+let animationId = null;
+let spinResults = [];
+
+// 각 칸별 각도 및 번호 매핑
+const slotAngles = [];
+for (let i = 0; i < total; i++) {
+  slotAngles.push({
+    start: i * angle,
+    end: (i + 1) * angle,
+    number: i + 1
+  });
+}
+
+// 룰렛 생성
+for (let i = 0; i < total; i++) {
+  const slice = document.createElement("div");
+  slice.className = "slice";
+  const rotateDeg = i * angle;
+  slice.style.transform = `rotate(${rotateDeg}deg) skewY(${90 - angle}deg)`;
+  slice.style.background = i % 2 === 0 ? "#ffd700" : "#ff9999";
+
+  const text = document.createElement("span");
+  text.innerText = i + 1;
+  text.style.transform = `skewY(-${90 - angle}deg) rotate(${angle / 2}deg)`;
+
+  slice.appendChild(text);
+  roulette.appendChild(slice);
+}
+
+// 애니메이션
+function animate() {
+  if (!spinning) return;
+
+  rotation += speed + Math.random() * 0.5;
+
+  if (stopping) {
+    speed *= 0.97;
+    if (speed < 0.1) {
+      spinning = false;
+      stopping = false;
+      cancelAnimationFrame(animationId);
+      showResult();
+      return;
+    }
+  }
+
+  roulette.style.transform = `rotate(${rotation}deg)`;
+  animationId = requestAnimationFrame(animate);
+}
+
+// 돌리기
+function startSpin() {
+  if (spinResults.length >= total) {
+    alert("10칸이 모두 채워졌습니다. 초기화 후 다시 돌려주세요!");
+    return;
+  }
+  if (spinning) return;
+
+  rotation += Math.random() * 360 + 720;
+  spinning = true;
+  stopping = false;
+  speed = 15;
+  animate();
+}
+
+// 멈추기
+function stopSpin() {
+  if (!spinning) { alert("룰렛을 먼저 돌려주세요!"); return; }
+  if (stopping) return;
+  stopping = true;
+}
+
+// 결과 표시
+function showResult() {
+  const normalized = (360 - rotation % 360) % 360;
+  let result = null;
+
+  for (let slot of slotAngles) {
+    if (normalized >= slot.start && normalized < slot.end) {
+      result = slot.number;
+      break;
+    }
+  }
+
+  if (result === null) result = total;
+
+  let displayValue;
+  if (result == 10) {
+    result = 0;
+  } 
+  if (result == 2 ) {
+    displayValue = 2;
+  }
+  if (result == 30){
+    displayValue = 3;
+  }
+  else {
+    displayValue = result + 1;
+  }
+  if (displayValue > 10) displayValue = 10;
+
+  const item = document.createElement("div");
+  item.className = "result-item";
+  item.innerText = displayValue + "번";
+  resultBar.appendChild(item);
+
+  spinResults.push(result);
+}
+
+// 초기화
+function resetResults() {
+  if (confirm("초기화 하시겠습니까?")) {
+    resultBar.innerHTML = "";
+    spinResults = [];
+    rotation = 0;
+    speed = 0;
+    spinning = false;
+    stopping = false;
+  }
+}
+</script>
+
+</body>
+</html>
